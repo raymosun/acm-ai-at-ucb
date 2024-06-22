@@ -20,7 +20,8 @@ const context = await esbuild.context({
   minify: true,
   define: {
     HUME_API_KEY: JSON.stringify(process.env.HUME_API_KEY),
-    HUME_SECRET_KEY: JSON.stringify(process.env.HUME_SECRET_KEY)
+    HUME_SECRET_KEY: JSON.stringify(process.env.HUME_SECRET_KEY),
+    HUME_CONFIG_ID: JSON.stringify(process.env.HUME_CONFIG_ID)
   }
 })
 

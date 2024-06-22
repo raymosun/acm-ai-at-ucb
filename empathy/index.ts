@@ -4,6 +4,7 @@ import { Hume, HumeClient, MimeType } from 'hume'
 
 declare const HUME_API_KEY: string
 declare const HUME_SECRET_KEY: string
+declare const HUME_CONFIG_ID: string
 
 // instantiate the Hume client and authenticate
 const client = new HumeClient({
@@ -13,6 +14,7 @@ const client = new HumeClient({
 
 // instantiates WebSocket and establishes an authenticated connection
 const socket = await client.empathicVoice.chat.connect({
+  configId: HUME_CONFIG_ID,
   onOpen: handleWebSocketOpenEvent,
   onMessage: handleWebSocketMessageEvent,
   onError: error => {
