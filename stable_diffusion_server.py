@@ -1,3 +1,5 @@
+# /opt/intel/oneapi/intelpython/envs/pytorch-gpu/bin/python Training/AI/GenAI/stable_diffusion_server.py
+
 from io import BytesIO
 import os
 import random
@@ -10,12 +12,24 @@ from typing import List, Dict, Tuple
 warnings.filterwarnings("ignore")
 
 import requests
+
+print("Loading torch...")
 import torch
+
+print("Loaded torch.")
 import torch.nn as nn
+
+print("Adding Intel extension for Pytorch...")
 import intel_extension_for_pytorch as ipex  # Used for optimizing PyTorch models
+
+print("Pytorch just got Intel'd.")
 from PIL import Image
 
+print("Loading diffusers...")
 from diffusers import DiffusionPipeline, DPMSolverMultistepScheduler
+
+print("Loaded diffusers.")
+
 
 class Text2ImgModel:
     """
@@ -53,13 +67,13 @@ class Text2ImgModel:
         self.data_type = torch_dtype
         if optimize:
             start_time = time.time()
-            #print("Optimizing the model...")
+            # print("Optimizing the model...")
             self.optimize_pipeline()
-            #print(
+            # print(
             #    "Optimization completed in {:.2f} seconds.".format(
             #        time.time() - start_time
             #    )
-            #)
+            # )
         if warmup:
             self.warmup_model()
 
@@ -68,7 +82,6 @@ class Text2ImgModel:
         model_id_or_path: str,
         torch_dtype: torch.dtype,
         enable_scheduler: bool,
-
     ) -> DiffusionPipeline:
         """
         Loads the pretrained model and prepares it for inference.
@@ -85,7 +98,7 @@ class Text2ImgModel:
         model_path = Path(f"/home/common/data/Big_Data/GenAI/{model_id_or_path}")
 
         if model_path.exists():
-            #print(f"Loading the model from {model_path}...")
+            # print(f"Loading the model from {model_path}...")
             load_path = model_path
         else:
             print("Using the default path for models...")
@@ -107,9 +120,11 @@ class Text2ImgModel:
                 pipeline.save_pretrained(f"{model_path}")
                 print("Model saved.")
             except Exception as e:
-                print(f"An error occurred while saving the model: {e}. Proceeding without saving.")
+                print(
+                    f"An error occurred while saving the model: {e}. Proceeding without saving."
+                )
         pipeline = pipeline.to(self.device)
-        #print("Model loaded.")
+        # print("Model loaded.")
         return pipeline
 
     def _optimize_pipeline(self, pipeline: DiffusionPipeline) -> DiffusionPipeline:
@@ -192,7 +207,7 @@ class Text2ImgModel:
                 image = self.pipeline(
                     prompt=prompt,
                     num_inference_steps=num_inference_steps,
-                    #negative_prompt=negative_prompt,
+                    # negative_prompt=negative_prompt,
                 ).images[0]
                 if not os.path.exists(save_path):
                     try:
@@ -208,27 +223,31 @@ class Text2ImgModel:
             images.append(image)
         return images
 
+
+model_cache = {}
 output_dir = "output"
 model_ids = [
     "stabilityai/stable-diffusion-2-1",
     "CompVis/stable-diffusion-v1-4",
 ]
 
-def prompt_to_image(prompt, model_id=model_ids[0], num_images=1):
+
+def prompt_to_image(prompt, model_id=model_ids[0], num_images=1, enhance=False):
     """
     `model_id` in `model_ids`
     """
+    print(prompt, model_id, num_images)
     # clear_output(wait=True)
     # button.button_style = "warning"
     print("\nOnce generated, images will be saved to `./output` dir, please wait...")
-    selected_model_index = model_id
-    model_id = model_ids[selected_model_index]
+    # selected_model_index = model_id
+    # model_id = model_ids[selected_model_index]
     model_key = (model_id, "xpu")
     if model_key not in model_cache:
         model_cache[model_key] = Text2ImgModel(model_id, device="xpu")
     # prompt = prompt_text.value
     # num_images = num_images_slider.value
-    #model = Text2ImgModel(model_id, device="xpu")
+    # model = Text2ImgModel(model_id, device="xpu")
     model = model_cache[model_key]
 
     enhancements = [
@@ -260,11 +279,11 @@ def prompt_to_image(prompt, model_id=model_ids[0], num_images=1):
         "cinematic",
         "enchanted",
         "ethereal",
-        "pastoral"
+        "pastoral",
     ]
     if not prompt:
         prompt = " "
-    if enhance_checkbox.value:
+    if enhance:
         prompt = prompt + " " + " ".join(random.sample(enhancements, 5))
         print(f"Using enhanced prompt: {prompt}")
     try:
@@ -276,10 +295,12 @@ def prompt_to_image(prompt, model_id=model_ids[0], num_images=1):
         )
         # clear_output(wait=True)
         # display_generated_images()
-        output_dir="output"
-        image_files = [f for f in os.listdir(output_dir) if f.endswith((".png", ".jpg"))]
+        output_dir = "output"
+        image_files = [
+            f for f in os.listdir(output_dir) if f.endswith((".png", ".jpg"))
+        ]
         for image_file in image_files:
-            yield mp_img.imread(os.path.join(output_dir, image_file))
+            yield os.path.join(output_dir, image_file)
     except KeyboardInterrupt:
         print("\nUser interrupted image generation...")
     except Exception as e:
@@ -287,7 +308,8 @@ def prompt_to_image(prompt, model_id=model_ids[0], num_images=1):
     finally:
         # button.button_style = "primary"
         print(
-           f"Complete generating {num_images} images in './output' in {time.time() - start_time:.2f} seconds."
+            f"Complete generating {num_images} images in './output' in {time.time() - start_time:.2f} seconds."
         )
 
-prompt_to_image('uc berkeley anime')
+
+print(list(prompt_to_image("uc berkeley anime")))
