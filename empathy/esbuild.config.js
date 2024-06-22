@@ -13,7 +13,9 @@ const context = await esbuild.context({
   entryPoints: ['index.ts'],
   outfile: 'public/index.js',
   format: 'esm',
-  external: ['stream'],
+  alias: {
+    stream: './nothing.js'
+  },
   bundle: true,
   minify: true,
   define: {
