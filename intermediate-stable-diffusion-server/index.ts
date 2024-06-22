@@ -9,9 +9,10 @@ type Unemployed = {
 }
 type Job = {
   prompt: string
-  clientResponse: Response
+  clientResponses: Response[]
 }
 
+const cache: Record<string, Buffer | Job> = {}
 const unemployed: Unemployed[] = []
 const understaffed: Job[] = []
 const jobs: Record<number, Job> = []
@@ -21,9 +22,11 @@ app.get('/next-image-to-generate', (_req, response) => {
   const next = understaffed.shift()
   if (next) {
     const id = nextId++
+    console.log(`[intel] ready, prompt available. get working! (${id})`)
     response.send(`${id}\n${next.prompt}`)
     jobs[id] = next
   } else {
+    console.log('[intel] ready, idle')
     unemployed.push({ response })
   }
 })
@@ -33,13 +36,28 @@ app.get('/gen-image', (req, res) => {
   if (typeof prompt !== 'string') {
     return res.status(400).send('?prompt= is required')
   }
+  const cached = cache[prompt]
+  if (cached) {
+    if (cached instanceof Buffer) {
+      console.log(`[client] want "${prompt}", serving from cache`)
+      return res.contentType('image/png').send(cached)
+    } else {
+      console.log(`[client] want "${prompt}", already being worked on`)
+      cached.clientResponses.push(res)
+      return
+    }
+  }
   const next = unemployed.shift()
+  const job = { prompt, clientResponses: [res] }
+  cache[prompt] = job
   if (next) {
     const id = nextId++
+    console.log(`[client] want "${prompt}", intel ready (${id})`)
     next.response.send(`${id}\n${prompt}`)
-    jobs[id] = { prompt, clientResponse: res }
+    jobs[id] = job
   } else {
-    understaffed.push({ prompt, clientResponse: res })
+    console.log(`[client] want "${prompt}", intel busy`)
+    understaffed.push(job)
   }
 })
 
@@ -53,7 +71,12 @@ app.post('/submit-image', (req, res) => {
   const chunks: Buffer[] = []
   req.on('data', chunk => chunks.push(chunk))
   req.on('end', () => {
-    job.clientResponse.contentType('image/png').send(Buffer.concat(chunks))
+    console.log(`[intel] done (${req.query.id})`)
+    const buffer = Buffer.concat(chunks)
+    cache[job.prompt] = buffer
+    for (const res of job.clientResponses) {
+      res.contentType('image/png').send(buffer)
+    }
     res.send('good job')
   })
 })
