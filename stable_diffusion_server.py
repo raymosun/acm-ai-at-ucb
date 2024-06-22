@@ -322,9 +322,10 @@ SERVER = os.environ["SERVER"].rstrip("/")
 images = []
 while True:
     # https://stackoverflow.com/a/69621045
-    job_id, prompt = requests.get(
-        f"{SERVER}/next-image-to-generate", timeout=None
-    ).text.split("\n", 1)
+    response = requests.get(f"{SERVER}/next-image-to-generate", timeout=None)
+    # https://stackoverflow.com/a/24531618
+    response.raise_for_status()
+    job_id, prompt = response.text.split("\n", 1)
     print("generate:", prompt)
     for image in images:
         os.remove(image)
