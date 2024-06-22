@@ -48,11 +48,14 @@ app.post('/submit-image', (req, res) => {
   if (!job) {
     return res.status(404).send(`job ${job} doesnt exist`)
   }
-  if (req.headers['content-type']) {
-    job.clientResponse.contentType(req.headers['content-type'])
-  }
-  job.clientResponse.send(req.body)
-  res.send('good job')
+
+  // Thanks ChatGPT
+  const chunks: Buffer[] = []
+  req.on('data', chunk => chunks.push(chunk))
+  req.on('end', () => {
+    job.clientResponse.contentType('image/png').send(Buffer.concat(chunks))
+    res.send('good job')
+  })
 })
 
 app.get('/', (_req, res) => {

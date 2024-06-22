@@ -1,4 +1,4 @@
-# /opt/intel/oneapi/intelpython/envs/pytorch-gpu/bin/python Training/AI/GenAI/stable_diffusion_server.py
+# SERVER=https://7ce4-2607-f140-400-8-688d-29d2-527a-6f97.ngrok-free.app/ /opt/intel/oneapi/intelpython/envs/pytorch-gpu/bin/python Training/AI/GenAI/stable_diffusion_server.py
 
 from io import BytesIO
 import os
@@ -181,7 +181,6 @@ class Text2ImgModel:
     def generate_images(
         self,
         prompt: str,
-        negative_prompt: str = "blurry, monochrome, greyscale, grayscale, black & white, washed out, sepia, low quality, smeared, unrealistic",
         num_inference_steps: int = 50,
         num_images: int = 5,
         save_path: str = "output",
@@ -207,7 +206,6 @@ class Text2ImgModel:
             ):
                 image = self.pipeline(
                     prompt=prompt,
-                    negative_prompt=negative_prompt,
                     num_inference_steps=num_inference_steps,
                     # negative_prompt=negative_prompt,
                 ).images[0]
@@ -314,4 +312,26 @@ def prompt_to_image(prompt, model_id=model_ids[0], num_images=1, enhance=False):
         )
 
 
-print(list(prompt_to_image("uc berkeley anime")))
+# print(list(prompt_to_image('uc berkeley anime')))
+
+import requests
+import os
+
+SERVER = os.environ["SERVER"].rstrip("/")
+
+images = []
+while True:
+    # https://stackoverflow.com/a/69621045
+    job_id, prompt = requests.get(
+        f"{SERVER}/next-image-to-generate", timeout=None
+    ).text.split("\n", 1)
+    print("generate:", prompt)
+    for image in images:
+        os.remove(image)
+    images = list(prompt_to_image(prompt))
+    print("generated:", images)
+    requests.post(
+        f"{SERVER}/submit-image",
+        params={"id": job_id, "name": images[0]},
+        data=open(images[0], "rb"),
+    )
