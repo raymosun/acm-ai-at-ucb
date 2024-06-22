@@ -71,6 +71,7 @@ async function handleWebSocketOpenEvent (): Promise<void> {
   // place logic here which you would like invoked when the socket opens
   console.log('Web socket connection opened')
   await captureAudio()
+  document.body.append('I am listening.\n\n')
 }
 
 import { convertBase64ToBlob } from 'hume'
@@ -110,6 +111,7 @@ function playAudio (): void {
 function handleWebSocketMessageEvent (
   message: Hume.empathicVoice.SubscribeEvent
 ): void {
+  console.log(message)
   // place logic here which you would like to invoke when receiving a message through the socket
   switch (message.type) {
     // add received audio to the playback queue, and play next audio output
@@ -125,9 +127,17 @@ function handleWebSocketMessageEvent (
     // stop audio playback, clear audio playback queue, and update audio playback state on interrupt
     case 'user_interruption':
       stopAudio()
+      document.body.append(`(interrupted 😡)`)
       break
-    default:
-      console.log(message)
+    case 'user_message':
+      document.body.append(`[you] ${message.message.content}\n\n`)
+      break
+    case 'assistant_message':
+      document.body.append(`[assistant] ${message.message.content}\n`)
+      break
+    case 'assistant_end':
+      document.body.append(`🤖✅\n\n`)
+      break
   }
 }
 
