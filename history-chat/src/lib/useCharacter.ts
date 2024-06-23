@@ -93,7 +93,7 @@ export function useCharacter(
     []
   );
   const [openSocket, setOpenSocket] = useState<StreamSocket | null>(null);
-  const sendAudio = useRef<(blob: Blob) => void>(() => {});
+  const sendAudio = useRef<((blob: Blob) => void) | null>(null);
 
   function handleWebSocketMessageEvent(
     message: Hume.empathicVoice.SubscribeEvent
@@ -148,7 +148,7 @@ export function useCharacter(
           console.log("WebSocket connection closed", cancelledRef.w);
           setOpenSocket((socket) => (socket === newSocket ? null : socket));
           if (sendAudio.current === sendAudioCallback) {
-            sendAudio.current = () => {};
+            sendAudio.current = null;
           }
         },
       });
@@ -162,10 +162,12 @@ export function useCharacter(
         newSocket.sendAudioInput(audioInput);
       };
 
-      // set up system prompt
-      await newSocket.sendSessionSettings({
-        systemPrompt: `Answer questions as ${description}, and do not in any circumstances deviate from the character that they have chosen. Be accurate in terms of what the character might possibly know about, and when something does not make sense, say that you are confused. Sprinkle historical facts whenever you have the opportunity to.`,
-      });
+      if (!cancelledRef.cancelled) {
+        // set up system prompt
+        await newSocket.sendSessionSettings({
+          systemPrompt: `Answer questions as ${description}, and do not in any circumstances deviate from the character that they have chosen. Be accurate in terms of what the character might possibly know about, and when something does not make sense, say that you are confused. Sprinkle historical facts whenever you have the opportunity to.`,
+        });
+      }
 
       return { newSocket, sendAudioCallback };
     },
@@ -193,7 +195,7 @@ export function useCharacter(
           newSocket.close();
         setOpenSocket((socket) => (socket === newSocket ? null : socket));
         if (sendAudio.current === sendAudioCallback) {
-          sendAudio.current = () => {};
+          sendAudio.current = null;
         }
       } else {
         console.log(w, "cleaning up (in promise...)", w);
@@ -203,7 +205,7 @@ export function useCharacter(
             newSocket.close();
           setOpenSocket((socket) => (socket === newSocket ? null : socket));
           if (sendAudio.current === sendAudioCallback) {
-            sendAudio.current = () => {};
+            sendAudio.current = null;
           }
         });
       }

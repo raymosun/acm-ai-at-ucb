@@ -7,7 +7,7 @@ import {
 import { MutableRefObject } from "react";
 
 export async function initializeRecorder(
-  listener: MutableRefObject<(data: Blob) => void>
+  listener: MutableRefObject<((data: Blob) => void) | null>
 ) {
   // the recorder responsible for recording the audio stream to be prepared as the audio input
   let recorder: MediaRecorder | null = null;
@@ -25,11 +25,19 @@ export async function initializeRecorder(
   ensureSingleValidAudioTrack(audioStream);
   // instantiate the media recorder
   recorder = new MediaRecorder(audioStream, { mimeType });
+  let queue: Blob[] = [];
   // callback for when recorded chunk is available to be processed
   recorder.ondataavailable = async ({ data }) => {
     // IF size of data is smaller than 1 byte then do nothing
     if (data.size < 1) return;
-    listener.current(data);
+    if (listener.current) {
+      if (queue.length > 0) {
+        listener.current(new Blob([...queue, data], data));
+        queue = [];
+      } else listener.current(data);
+    } else {
+      queue.push(data);
+    }
   };
   // capture audio input at a rate of 100ms (recommended)
   const timeSlice = 100;
