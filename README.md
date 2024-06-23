@@ -37,7 +37,7 @@ This will produce a URL.
 On Intel's Jupyter notebook training, select **Pytorch GPU** as the kernel, and install this extra dependency.
 
 ```shell
-$ /opt/intel/oneapi/intelpython/envs/pytorch-gpu/bin/python -m pip install requests  --user > /dev/null 2>&1
+$ /opt/intel/oneapi/intelpython/envs/pytorch-gpu/bin/python -m pip install requests openai --user > /dev/null 2>&1
 ```
 
 Finally, start the Intel server that generates the Stable Diffusion images.

@@ -1,0 +1,86 @@
+.message {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  max-width: 90%;
+  backdrop-filter: blur(20px);
+  animation: appear 0.5s;
+}
+.user {
+  text-align: left;
+  margin-right: auto;
+}
+.assistant {
+  text-align: right;
+  margin-left: auto;
+}
+.done {
+  margin-bottom: 300px;
+}
+
+.image {
+  position: absolute;
+  right: 40px;
+  top: 100%;
+  margin-top: -10px;
+  transform: rotate(-1deg);
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+  /* backdrop-filter: blur(20px); */
+}
+
+.bubble {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 15px;
+}
+.user .bubble {
+  border-top-left-radius: 0;
+}
+.assistant .bubble {
+  border-top-right-radius: 0;
+}
+
+.blob {
+  position: absolute;
+  z-index: -1;
+  width: 150px;
+  top: -50px;
+  bottom: -50px;
+  filter: blur(100px);
+}
+.user .blob {
+  left: 0;
+  background-color: #0ea5e9;
+  transform: rotate(1deg);
+}
+.assistant .blob {
+  right: 0;
+  background-color: #ec4899;
+  transform: rotate(-1deg);
+}
+
+.part {
+  animation: pop-in 1.5s forwards;
+}
+@keyframes pop-in {
+  from {
+    color: white;
+    text-shadow: 0 0 15px white;
+  }
+  to {
+    color: rgba(255, 255, 255, 0.8);
+    text-shadow: 0 0 0 white;
+  }
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

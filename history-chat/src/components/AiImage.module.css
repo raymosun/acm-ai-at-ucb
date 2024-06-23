@@ -1,0 +1,25 @@
+.image {
+  border-radius: 20px;
+}
+
+.loading {
+  animation: shimmer 1s infinite alternate ease-in-out;
+  opacity: 0.1;
+}
+
+@keyframes shimmer {
+  from {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  to {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
+.loaded,
+.error {
+  opacity: 1;
+  transition: opacity 0.5s;
+}

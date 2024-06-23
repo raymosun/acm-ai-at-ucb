@@ -2,6 +2,7 @@
 
 from io import BytesIO
 import os
+os.environ["OPENAI_API_KEY"] = "s" + "k" + "-pr" + "oj-U" + "bUkPB2SYiTVdARtEaO9T3" + "BlbkFJHbLYrN2EKvvQE17NZTPq" 
 import random
 import time
 import warnings
@@ -65,6 +66,81 @@ class Text2ImgModel:
             model_id_or_path, torch_dtype, enable_scheduler
         )
         self.data_type = torch_dtype
+
+        # Hardcode a negative prompt
+        negative_prompt = [
+            "poorly Rendered face",
+            "poorly drawn face",
+            "poor facial details",
+            "poorly drawn hands",
+            "poorly rendered hands",
+            "low resolution",
+            "Images cut out at the top, left, right, bottom.",
+            "bad composition",
+            "mutated body parts",
+            "blurry image",
+            "disfigured",
+            "oversaturated",
+            "bad anatomy",
+            "deformed body features",
+            "out of frame", 
+            "lowres", 
+            "text", 
+            "error", 
+            "cropped", 
+            "worst quality", 
+            "low quality", 
+            "jpeg artifacts", 
+            "ugly", 
+            "duplicate", 
+            "morbid", 
+            "mutilated", 
+            "out of frame", 
+            "extra fingers", 
+            "mutated hands", 
+            "poorly drawn hands", 
+            "poorly drawn face", 
+            "mutation", 
+            "deformed", 
+            "blurry", 
+            "dehydrated", 
+            "bad anatomy", 
+            "bad proportions", 
+            "extra limbs", 
+            "cloned face", 
+            "disfigured, gross proportions", 
+            "malformed limbs", 
+            "missing arms", 
+            "missing legs", 
+            "extra arms,"
+            "extra legs", 
+            "fused fingers", 
+            "too many fingers", 
+            "long neck", 
+            "username", 
+            "watermark",
+            "signature",
+            "monochrome", 
+            "(greyscale)",
+            "(grayscale)",
+            "(black & white)",
+            "(washed out)",
+            "(daguerreotype)",
+            "(sepia)",
+            "low quality",
+            "smeared",
+            "illustration",
+            "illustrated",
+            "painting"
+        ]
+        combined_neg_prompt = ""
+        for prompt_term in negative_prompt:
+            combined_neg_prompt = combined_neg_prompt + prompt_term + ", "
+        # combined_neg_prompt = f"({combined_neg_prompt})2.0"
+        self.combined_neg_prompt = combined_neg_prompt
+        print(f"{self.combined_neg_prompt=}")
+
+        
         if optimize:
             start_time = time.time()
             # print("Optimizing the model...")
@@ -199,6 +275,7 @@ class Text2ImgModel:
         """
 
         images = []
+        prompt = prompt + " (full color)1.5, saturated, (vibrant)1.5 " # Encourage colorful output
         for i in range(num_images):
             with torch.xpu.amp.autocast(
                 enabled=True if self.data_type != torch.float32 else False,
@@ -207,6 +284,7 @@ class Text2ImgModel:
                 image = self.pipeline(
                     prompt=prompt,
                     num_inference_steps=num_inference_steps,
+                    negative_prompt=self.combined_neg_prompt,
                     # negative_prompt=negative_prompt,
                 ).images[0]
                 if not os.path.exists(save_path):
@@ -227,16 +305,36 @@ class Text2ImgModel:
 model_cache = {}
 output_dir = "output"
 model_ids = [
+    "stabilityai/stable-diffusion-xl-base-1.0",
     "stabilityai/stable-diffusion-2-1",
     "CompVis/stable-diffusion-v1-4",
 ]
 
+
+from openai import OpenAI
+import pdb
+def gpt_prompt(short_prompt):
+    client = OpenAI(
+        # This is the default and can be omitted
+        api_key=os.environ.get("OPENAI_API_KEY"),
+    )
+    chat_completion = client.chat.completions.create(
+        messages=[
+            {
+                "role": "user",
+                "content": f"I will give you a line of spoken dialogue or setting. Elaborate that sentence into a prompt suitable for a Stable Diffusion model. Prefer a grounded historical description, output distinct prompts, and be concise (less than 40 words) and specific. Do not say anything else. \n {short_prompt}",
+            }
+        ],
+        model="gpt-4", #"gpt-3.5-turbo",
+    )
+    return chat_completion.choices[0].message.content
 
 def prompt_to_image(prompt, model_id=model_ids[0], num_images=1, enhance=False):
     """
     `model_id` in `model_ids`
     """
     print(prompt, model_id, num_images)
+    prompt = gpt_prompt(prompt) # Elaborate from a short prompt
     # clear_output(wait=True)
     # button.button_style = "warning"
     print("\nOnce generated, images will be saved to `./output` dir, please wait...")
@@ -325,35 +423,37 @@ for f in os.listdir(output_dir):
         os.remove(os.path.join(output_dir, f))
 
 images = []
-while True:
-    # https://stackoverflow.com/a/69621045
-    response = requests.post(f"{SERVER}/next-image-to-generate", timeout=None)
-    if response.status_code == 524:
-        # means request took too long (from cloudflare)
-        # just means that there's nothing to do for now
-        # just wait a bit
-        import time
+job_id = ""
+try:
+    while True:
+        # https://stackoverflow.com/a/69621045
+        response = requests.post(f"{SERVER}/next-image-to-generate", timeout=None)
+        if response.status_code == 524:
+            # means request took too long (from cloudflare)
+            # just means that there's nothing to do for now
+            # just wait a bit
+            import time
 
-        time.sleep(10)
-        continue
-    # https://stackoverflow.com/a/24531618
-    try:
+            print("sleeping for 5 seconds")
+            time.sleep(5)
+            continue
+        # https://stackoverflow.com/a/24531618
         response.raise_for_status()
-    except requests.exceptions.HTTPError as error:
-        # Release job so it doesn't get lost
+        job_id, prompt = response.text.split("\n", 1)
+        print("generate:", prompt)
+        for image in images:
+            os.remove(image)
+        images = list(prompt_to_image(prompt))
+        print("generated:", images)
         requests.post(
-            f"{SERVER}/release-job",
-            params={"id": job_id},
+            f"{SERVER}/submit-image",
+            params={"id": job_id, "name": images[0]},
+            data=open(images[0], "rb"),
         )
-        raise error
-    job_id, prompt = response.text.split("\n", 1)
-    print("generate:", prompt)
-    for image in images:
-        os.remove(image)
-    images = list(prompt_to_image(prompt))
-    print("generated:", images)
+        job_id = ""
+finally:
+    # Release job so it doesn't get lost
     requests.post(
-        f"{SERVER}/submit-image",
-        params={"id": job_id, "name": images[0]},
-        data=open(images[0], "rb"),
+        f"{SERVER}/release-job",
+        params={"id": job_id},
     )

@@ -31,6 +31,7 @@ app.post('/next-image-to-generate', (req, response) => {
     const worker: Unemployed = { response, aborted: false }
     unemployed.push(worker)
     req.on('close', () => {
+      console.log('[intel] request aborted')
       worker.aborted = true
     })
   }
@@ -55,7 +56,7 @@ app.get('/gen-image', (req, res) => {
   let next: Unemployed | undefined
   do {
     next = unemployed.shift()
-  } while (next && !next.aborted)
+  } while (next?.aborted)
   const job = { prompt, clientResponses: [res] }
   cache[prompt] = job
   if (next) {
@@ -95,6 +96,7 @@ app.post('/release-job', (req, res) => {
     return res.status(404).send(`job ${job} doesnt exist`)
   }
   understaffed.push(job)
+  console.log(`[intel] job released (${req.query.id})`)
 })
 
 app.get('/', (_req, res) => {
