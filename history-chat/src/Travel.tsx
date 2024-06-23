@@ -18,7 +18,7 @@ interface Setting {
 
 function Travel() {
   const [setting, setSetting] = useState<Setting | null>(null);
-  const [dialogue, setSetDialogue] = useState<string[]>([]);
+  const [dialogue, setDialogue] = useState<string[]>([]);
   const generated = useRef(false);
 
   const [searchParams] = useSearchParams();
@@ -39,7 +39,7 @@ function Travel() {
   useEffect(() => {
     getDialogue(JSON.stringify(setting)).then(out => {
       if (out) {
-        setSetDialogue(JSON.parse(out));
+        setDialogue(JSON.parse(out));
       }
     });
   }, [setting])
