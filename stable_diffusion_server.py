@@ -181,6 +181,7 @@ class Text2ImgModel:
     def generate_images(
         self,
         prompt: str,
+        negative_prompt: str = "blurry, monochrome, greyscale, grayscale, black & white, washed out, sepia, low quality, smeared, unrealistic",
         num_inference_steps: int = 50,
         num_images: int = 5,
         save_path: str = "output",
@@ -206,6 +207,7 @@ class Text2ImgModel:
             ):
                 image = self.pipeline(
                     prompt=prompt,
+                    negative_prompt=negative_prompt,
                     num_inference_steps=num_inference_steps,
                     # negative_prompt=negative_prompt,
                 ).images[0]
