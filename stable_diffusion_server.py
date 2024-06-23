@@ -319,12 +319,33 @@ import os
 
 SERVER = os.environ["SERVER"].rstrip("/")
 
+# ensure dir is empty
+for f in os.listdir(output_dir):
+    if f.endswith((".png", ".jpg")):
+        os.remove(os.path.join(output_dir, f))
+
 images = []
 while True:
     # https://stackoverflow.com/a/69621045
-    response = requests.get(f"{SERVER}/next-image-to-generate", timeout=None)
+    response = requests.post(f"{SERVER}/next-image-to-generate", timeout=None)
+    if response.status_code == 524:
+        # means request took too long (from cloudflare)
+        # just means that there's nothing to do for now
+        # just wait a bit
+        import time
+
+        time.sleep(10)
+        continue
     # https://stackoverflow.com/a/24531618
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as error:
+        # Release job so it doesn't get lost
+        requests.post(
+            f"{SERVER}/release-job",
+            params={"id": job_id},
+        )
+        raise error
     job_id, prompt = response.text.split("\n", 1)
     print("generate:", prompt)
     for image in images:

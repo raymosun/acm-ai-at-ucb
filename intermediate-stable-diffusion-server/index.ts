@@ -18,7 +18,7 @@ const understaffed: Job[] = []
 const jobs: Record<number, Job> = []
 
 // Jupyter notebook indicates that it is unemployed and needs a job
-app.get('/next-image-to-generate', (_req, response) => {
+app.post('/next-image-to-generate', (_req, response) => {
   const next = understaffed.shift()
   if (next) {
     const id = nextId++
@@ -81,6 +81,14 @@ app.post('/submit-image', (req, res) => {
   })
 })
 
+app.post('/release-job', (req, res) => {
+  const job = jobs[+(req.query.id ?? 0)]
+  if (!job) {
+    return res.status(404).send(`job ${job} doesnt exist`)
+  }
+  understaffed.push(job)
+})
+
 app.get('/', (_req, res) => {
   res
     .contentType('text/plain')
@@ -90,8 +98,9 @@ app.get('/', (_req, res) => {
         'GET /gen-image?prompt=<prompt>',
         '',
         'For Intel:',
-        'GET /next-image-to-generate',
-        'POST /submit-image?id=<job-id>'
+        'POST /next-image-to-generate',
+        'POST /submit-image?id=<job-id>',
+        'POST /release-job?id=<job-id>'
       ].join('\n')
     )
 })
