@@ -73,3 +73,21 @@ body {
 .selected {
   transform: scale(1.1);
 }
+
+.form {
+  display: grid;
+  grid-template-areas:
+    "label button"
+    "p p";
+}
+.form label {
+  grid-area: label;
+  display: flex;
+  flex-direction: column;
+}
+.form button {
+  grid-area: button;
+}
+.selection {
+  grid-area: p;
+}

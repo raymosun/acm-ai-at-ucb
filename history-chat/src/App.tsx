@@ -54,11 +54,11 @@ function App() {
         {mode === "history" ? "History Chat" : "Meet a Climate Researcher"}
       </h1>
       {mode === "history" ? (
-        <>
-          <h4>
-            <b>When</b> would you like to explore?
-          </h4>
-          <div>
+        <form className="form" onSubmit={handleButtonClick}>
+          <label>
+            <span>
+              <b>When</b> would you like to explore?
+            </span>
             <input
               type="text"
               value={text}
@@ -66,16 +66,21 @@ function App() {
               placeholder="Input a place a time, or a historical event."
               style={{ width: "20rem" }}
             />
-            <button onClick={handleButtonClick}>Submit</button>
-            <p>You have selected: {displayText}</p>
-          </div>
-        </>
+          </label>
+          <button type="submit">Submit</button>
+        </form>
       ) : (
-        <>
-          <h4>
-            <b>Who</b> would you like to meet?
-          </h4>
-          <div>
+        <form
+          className="form"
+          onSubmit={(e) => {
+            setDisplayText(text);
+            e.preventDefault();
+          }}
+        >
+          <label>
+            <span>
+              <b>Who</b> would you like to meet?
+            </span>
             <input
               type="text"
               value={text}
@@ -83,10 +88,10 @@ function App() {
               placeholder="Input the name of a climate change researcher."
               style={{ width: "20rem" }}
             />
-            <button onClick={() => setDisplayText(text)}>Submit</button>
-            <p>You have selected: {displayText}</p>
-          </div>
-        </>
+          </label>
+          <button type="submit">Submit</button>
+          <p className="selection">You have selected: {displayText}</p>
+        </form>
       )}
       {listening ? <p>LISTENING</p> : null}
       <div className="messages">

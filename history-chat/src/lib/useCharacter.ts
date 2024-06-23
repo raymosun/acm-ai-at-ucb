@@ -135,6 +135,7 @@ export function useCharacter(
             newSocket.close();
             return;
           }
+          setMessages([]);
           setOpenSocket(newSocket);
           (await recorderRef.current)?.start(sendAudioCallback);
         },
