@@ -17,7 +17,11 @@ export function MessageBubble({ message }: MessageBubbleProps) {
     );
   } else {
     return (
-      <div className={`${styles.message} ${styles.assistant}`}>
+      <div
+        className={`${styles.message} ${styles.assistant} ${
+          message.done ? styles.done : ""
+        }`}
+      >
         <div className={styles.blob}></div>
         <div className={styles.bubble}>
           {message.content.map((part, i) => (

@@ -4,13 +4,17 @@
   flex-direction: column;
   max-width: 90%;
   backdrop-filter: blur(20px);
+  animation: appear 0.5s;
 }
 .user {
   text-align: left;
+  margin-right: auto;
 }
 .assistant {
   text-align: right;
   margin-left: auto;
+}
+.done {
   margin-bottom: 300px;
 }
 
@@ -41,16 +45,19 @@
   position: absolute;
   z-index: -1;
   width: 150px;
-  height: 100%;
+  top: -50px;
+  bottom: -50px;
   filter: blur(100px);
 }
 .user .blob {
   left: 0;
   background-color: #0ea5e9;
+  transform: rotate(1deg);
 }
 .assistant .blob {
   right: 0;
   background-color: #ec4899;
+  transform: rotate(-1deg);
 }
 
 .part {
@@ -64,5 +71,16 @@
   to {
     color: rgba(255, 255, 255, 0.8);
     text-shadow: 0 0 0 white;
+  }
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
