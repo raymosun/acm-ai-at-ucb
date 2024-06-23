@@ -66,3 +66,38 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 } */
+
+.people {
+  display: flex;
+  justify-content: space-between;
+  margin: 40px 0;
+}
+.person {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+.person p {
+  margin: 0;
+}
+.person-right {
+  text-align: right;
+}
+.persoon-name {
+  font-weight: bold;
+  font-size: 1.2em;
+}
+.person-relationship {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9em;
+}
+
+.prompt {
+  margin: 0;
+  font-weight: normal;
+  margin-top: 40px;
+}
+
+.setting {
+  margin: 0;
+}

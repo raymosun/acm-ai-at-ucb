@@ -105,12 +105,20 @@ function Travel() {
       >
         Time Travel!
       </button>
-      <h4>{prompt}</h4>
-      <h4>{setting?.setting}</h4>
-      {/* <div style={{ display: "flex" }}>
-        <div>{JSON.stringify(setting?.personA ?? {})}</div>
-        <div>{JSON.stringify(setting?.personB ?? {})}</div>
-      </div> */}
+      <h2 className="prompt">{prompt}</h2>
+      <p className="setting">{setting?.setting}</p>
+      <div className="people">
+        <div className="person">
+          <p className="persoon-name">{setting?.personA.name}</p>{" "}
+          <p className="person-relationship">{setting?.personA.relationship}</p>
+          <p>{setting?.personA.description}</p>
+        </div>
+        <div className="person person-right">
+          <p className="persoon-name">{setting?.personB.name}</p>{" "}
+          <p className="person-relationship">{setting?.personB.relationship}</p>
+          <p>{setting?.personB.description}</p>
+        </div>
+      </div>
       <div className="messages">
         {dialogue.map((line, index) => (
           <MessageBubble
