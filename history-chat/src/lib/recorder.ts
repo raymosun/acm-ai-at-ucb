@@ -4,8 +4,11 @@ import {
   getAudioStream,
   getBrowserSupportedMimeType,
 } from "hume";
+import { MutableRefObject } from "react";
 
-export async function initializeRecorder(listener: (data: Blob) => void) {
+export async function initializeRecorder(
+  listener: MutableRefObject<(data: Blob) => void>
+) {
   // the recorder responsible for recording the audio stream to be prepared as the audio input
   let recorder: MediaRecorder | null = null;
   // the stream of audio captured from the user's microphone
@@ -26,7 +29,7 @@ export async function initializeRecorder(listener: (data: Blob) => void) {
   recorder.ondataavailable = async ({ data }) => {
     // IF size of data is smaller than 1 byte then do nothing
     if (data.size < 1) return;
-    listener(data);
+    listener.current(data);
   };
   // capture audio input at a rate of 100ms (recommended)
   const timeSlice = 100;

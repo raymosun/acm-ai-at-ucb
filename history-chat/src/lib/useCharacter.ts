@@ -1,6 +1,6 @@
 import { StreamSocket } from "hume/api/resources/empathicVoice";
 import humeClient from "./hume";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Hume,
   MimeType,
@@ -10,6 +10,69 @@ import {
 } from "hume";
 import { queueAudio, stopAudio } from "./audio";
 import { initializeRecorder } from "./recorder";
+export type UserMessage = {
+  role: "user";
+  content: string;
+};
+export type AssistantMessage = {
+  role: "assistant";
+  content: string[];
+  done: boolean;
+  interrupted: boolean;
+};
+export type Message = UserMessage | AssistantMessage;
+
+type BetterNameLater = {
+  newSocket: StreamSocket;
+  sendAudioCallback: (blob: Blob) => void;
+};
+
+let id = 1000;
+function simplifyMessages(
+  rawMessages: Hume.empathicVoice.SubscribeEvent[]
+): Message[] {
+  const simplified: Message[] = [];
+  let lastAssistantMessage: AssistantMessage | undefined;
+  let userLastSpoke = true;
+  for (const message of rawMessages) {
+    switch (message.type) {
+      case "user_message":
+        simplified.push({
+          role: "user",
+          content: message.message.content ?? "[no content]",
+        });
+        userLastSpoke = true;
+        break;
+      case "assistant_message":
+        if (lastAssistantMessage && !userLastSpoke) {
+          lastAssistantMessage.content.push(
+            message.message.content ?? "[no content]"
+          );
+        } else {
+          lastAssistantMessage = {
+            role: "assistant",
+            content: [message.message.content ?? "[no content]"],
+            done: false,
+            interrupted: false,
+          };
+          simplified.push(lastAssistantMessage);
+          userLastSpoke = false;
+        }
+        break;
+      case "assistant_end":
+        if (lastAssistantMessage) {
+          lastAssistantMessage.done = true;
+        }
+        break;
+      case "user_interruption":
+        if (lastAssistantMessage) {
+          lastAssistantMessage.interrupted = true;
+        }
+        break;
+    }
+  }
+  return simplified;
+}
 
 const mimeType: MimeType = (() => {
   const result = getBrowserSupportedMimeType();
@@ -24,12 +87,13 @@ const voiceConfigIds = {
 
 export function useCharacter(
   description: string,
-  onOpen: () => void,
-  appendMessage: (message: string) => void,
   voice: keyof typeof voiceConfigIds = "ito"
-) {
-  const [socket, setSocket] = useState<StreamSocket | null>(null);
-  const initializedCharacter = useRef("");
+): { messages: Message[]; listening: boolean } {
+  const [messages, setMessages] = useState<Hume.empathicVoice.SubscribeEvent[]>(
+    []
+  );
+  const [openSocket, setOpenSocket] = useState<StreamSocket | null>(null);
+  const sendAudio = useRef<(blob: Blob) => void>(() => {});
 
   function handleWebSocketMessageEvent(
     message: Hume.empathicVoice.SubscribeEvent
@@ -48,63 +112,112 @@ export function useCharacter(
       // stop audio playback, clear audio playback queue, and update audio playback state on interrupt
       case "user_interruption":
         stopAudio();
-        appendMessage(`(interrupted 😡)`);
+        setMessages((messages) => [...messages, message]);
         break;
       case "user_message":
-        appendMessage(`[you] ${message.message.content}\n\n`);
-        break;
       case "assistant_message":
-        appendMessage(`[assistant] ${message.message.content}\n`);
-        break;
       case "assistant_end":
-        appendMessage(`🤖✅\n\n`);
+        setMessages((messages) => [...messages, message]);
         break;
     }
   }
 
-  async function initalizeSocket() {
-    // connect new socket
-    const newSocket = await humeClient.empathicVoice.chat.connect({
-      configId: voiceConfigIds[voice],
-      onOpen,
-      onMessage: handleWebSocketMessageEvent,
-      onError: (error) => {
-        console.error(error);
-      },
-      onClose: () => {
-        console.log("WebSocket connection closed");
-      },
-    });
+  const initalizeSocket = useCallback(
+    async (cancelledRef: {
+      w: number;
+      cancelled: boolean;
+    }): Promise<BetterNameLater> => {
+      // connect new socket
+      const newSocket = await humeClient.empathicVoice.chat.connect({
+        configId: voiceConfigIds[voice],
+        onOpen: () => {
+          if (cancelledRef.cancelled) {
+            console.log("forgoing because it closed", cancelledRef.w);
+            newSocket.close();
+            return;
+          }
+          setOpenSocket(newSocket);
+          sendAudio.current = sendAudioCallback;
+          console.log("open", cancelledRef.w);
+        },
+        onMessage: handleWebSocketMessageEvent,
+        onError: (error) => {
+          console.error(error);
+        },
+        onClose: () => {
+          console.log("WebSocket connection closed", cancelledRef.w);
+          setOpenSocket((socket) => (socket === newSocket ? null : socket));
+          if (sendAudio.current === sendAudioCallback) {
+            sendAudio.current = () => {};
+          }
+        },
+      });
 
-    // set up system prompt
-    await newSocket.sendSessionSettings({
-      systemPrompt: `Answer questions as ${description}, and do not in any circumstances deviate from the character that they have chosen. Be accurate in terms of what the character might possibly know about, and when something does not make sense, say that you are confused. Sprinkle historical facts whenever you have the opportunity to.`,
-    });
-
-    setSocket(newSocket);
-  }
-
-  useEffect(() => {
-    // prevent duplicate socket connections
-    if (initializedCharacter.current === description) return;
-    initializedCharacter.current = description;
-
-    // close old socket when changing characters
-    if (socket) socket.close();
-
-    initalizeSocket();
-  }, [description]);
-
-  useEffect(() => {
-    async function sendAudio(audio: Blob) {
-      if (!socket) return;
-      // console.log('1111sending audio', audio)
-      const encodedAudioData = await convertBlobToBase64(audio);
-      const audioInput: Omit<Hume.empathicVoice.AudioInput, "type"> = {
-        data: encodedAudioData,
+      const sendAudioCallback = async function sendAudio(audio: Blob) {
+        const encodedAudioData = await convertBlobToBase64(audio);
+        const audioInput: Omit<Hume.empathicVoice.AudioInput, "type"> = {
+          data: encodedAudioData,
+        };
+        console.log("giving audio to", cancelledRef.w);
+        newSocket.sendAudioInput(audioInput);
       };
-      socket.sendAudioInput(audioInput);
-    }
+
+      // set up system prompt
+      await newSocket.sendSessionSettings({
+        systemPrompt: `Answer questions as ${description}, and do not in any circumstances deviate from the character that they have chosen. Be accurate in terms of what the character might possibly know about, and when something does not make sense, say that you are confused. Sprinkle historical facts whenever you have the opportunity to.`,
+      });
+
+      return { newSocket, sendAudioCallback };
+    },
+    [description, voice]
+  );
+
+  useEffect(() => {
+    const w = id++;
+    console.log("useEffect", w);
+    const bleh = { w, cancelled: false };
+    const promise = initalizeSocket(bleh);
+    let obj: BetterNameLater | undefined;
+    promise.then((wh) => {
+      console.log("readyy", w);
+      obj = wh;
+    });
+
+    return () => {
+      console.log("cleanup", w);
+      bleh.cancelled = true;
+      if (obj) {
+        const { newSocket, sendAudioCallback } = obj;
+        console.log(w, "cleaning up", w);
+        if (newSocket.websocket.readyState === WebSocket.OPEN)
+          newSocket.close();
+        setOpenSocket((socket) => (socket === newSocket ? null : socket));
+        if (sendAudio.current === sendAudioCallback) {
+          sendAudio.current = () => {};
+        }
+      } else {
+        console.log(w, "cleaning up (in promise...)", w);
+        promise.then(({ newSocket, sendAudioCallback }) => {
+          console.log(w, "cleaning up (in promise)", w);
+          if (newSocket.websocket.readyState === WebSocket.OPEN)
+            newSocket.close();
+          setOpenSocket((socket) => (socket === newSocket ? null : socket));
+          if (sendAudio.current === sendAudioCallback) {
+            sendAudio.current = () => {};
+          }
+        });
+      }
+    };
+  }, [initalizeSocket]);
+
+  useEffect(() => {
     initializeRecorder(sendAudio);
-  }, [socket]);
+  }, []);
+
+  console.log("render", openSocket);
+
+  return {
+    messages: simplifyMessages(messages),
+    listening: openSocket !== null,
+  };
 }

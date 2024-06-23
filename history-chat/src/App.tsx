@@ -1,7 +1,5 @@
-import { useState } from "react";
 import "./App.css";
 import { AiImage } from "./components/AiImage";
-import { useHume } from "./lib/useHume";
 import React, { useState } from "react";
 import { useCharacter } from "./lib/useCharacter";
 
@@ -16,19 +14,8 @@ function App() {
   const handleButtonClick = () => {
     setDisplayText(text);
   };
-  // const messages = useHume(text);
-  const [messages, setMessages] = useState<string[]>([]);
 
-  function appendMessage(message: string) {
-    setMessages((prevMessages) => [...prevMessages, message]);
-  }
-
-  useCharacter(
-    displayText,
-    () => appendMessage("connected!"),
-    appendMessage,
-    "ito"
-  );
+  const { messages, listening } = useCharacter(displayText, "ito");
 
   return (
     <>
