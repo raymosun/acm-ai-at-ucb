@@ -15,7 +15,7 @@ function App() {
     setDisplayText(text);
 
   };
-  const messages = useHume(text);
+  const messages = useHume(displayText);
 
   return (
     <>

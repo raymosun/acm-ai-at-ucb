@@ -10,9 +10,10 @@ import {
   convertBase64ToBlob
 } from 'hume';
 
+
 export function useHume(figure: string) {
   const [messages, setMessages] = useState<string[]>([]);
-  const humeInitialized = useRef(false);
+  const humeInitialized = useRef<HumeClient|null>(null);
 
   const appendMessage = (message: string) => {
     setMessages((prevMessages) => [...prevMessages, message]);
@@ -20,15 +21,23 @@ export function useHume(figure: string) {
 
   useEffect(() => {
     if (humeInitialized.current) return;
-    humeInitialized.current = true;
-
+    
     // instantiate the Hume client and authenticate
     const client = new HumeClient({
       apiKey: import.meta.env.VITE_HUME_API_KEY,
       secretKey: import.meta.env.VITE_HUME_SECRET_KEY,
     });
+    humeInitialized.current = client;
+  }, [])
 
-    initializeClient(client, appendMessage, figure);
+  useEffect(() => {
+    if (!humeInitialized.current) return
+
+    const socket = initializeClient(humeInitialized.current, appendMessage, figure);
+
+    return  () => {
+      socket.then(socket=>socket.close())
+    }
 
   }, [figure]);
 
@@ -49,7 +58,6 @@ async function initializeClient(client: HumeClient, appendMessage: (message: str
 
   // instantiates WebSocket and establishes an authenticated connection
   const socket = await client.empathicVoice.chat.connect({
-    // configId: import.meta.env.VITE_HUME_CONFIG_ID,
     configId: config.id,
     onOpen: handleWebSocketOpenEvent,
     onMessage: handleWebSocketMessageEvent,
@@ -181,4 +189,6 @@ async function initializeClient(client: HumeClient, appendMessage: (message: str
     // clear the audioQueue
     audioQueue.length = 0
   }
+
+  return socket
 }
