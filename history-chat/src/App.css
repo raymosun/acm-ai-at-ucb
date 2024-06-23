@@ -53,3 +53,23 @@ body {
   flex-direction: column;
   gap: 20px;
 }
+
+.mode-select {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+.set-mode {
+  border: none;
+  padding: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+.set-mode img {
+  width: 80px;
+  height: 80px;
+}
+.selected {
+  transform: scale(1.1);
+}
