@@ -99,9 +99,9 @@ export function useCharacter(
     recorderRef.current = initializeRecorder();
   }, []);
 
-  function handleWebSocketMessageEvent(
+  async function handleWebSocketMessageEvent(
     message: Hume.empathicVoice.SubscribeEvent
-  ): void {
+  ): Promise<void> {
     console.log("got message", message);
     // place logic here which you would like to invoke when receiving a message through the socket
     switch (message.type) {
@@ -111,7 +111,7 @@ export function useCharacter(
         const audioOutput = message.data;
         const blob = convertBase64ToBlob(audioOutput, mimeType);
         // add audio Blob to audioQueue
-        queueAudio(blob);
+        queueAudio((await recorderRef.current)?.context, blob);
         break;
       // stop audio playback, clear audio playback queue, and update audio playback state on interrupt
       case "user_interruption":

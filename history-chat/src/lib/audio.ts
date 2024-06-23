@@ -6,7 +6,7 @@ let isPlaying = false;
 let currentAudio: HTMLAudioElement | null = null;
 
 // play the audio within the playback queue, converting each Blob into playable HTMLAudioElements
-function playAudio(): void {
+function playAudio(context?: AudioContext): void {
   // If there is nothing in the audioQueue OR audio is currently playing then do nothing
   if (!audioQueue.length || isPlaying) return;
   // update isPlaying state
@@ -18,6 +18,13 @@ function playAudio(): void {
   // converts Blob to AudioElement for playback
   const audioUrl = URL.createObjectURL(audioBlob);
   currentAudio = new Audio(audioUrl);
+  if (context) {
+    const track = context.createMediaElementSource(currentAudio);
+    const gainNode = context.createGain();
+    gainNode.gain.value = 5;
+    track.connect(gainNode);
+    gainNode.connect(context.destination);
+  }
   // play audio
   currentAudio.play();
   // callback for when audio finishes playing
@@ -25,15 +32,18 @@ function playAudio(): void {
     // update isPlaying state
     isPlaying = false;
     // attempt to pull next audio output from queue
-    if (audioQueue.length) playAudio();
+    if (audioQueue.length) playAudio(context);
   };
 }
 
-export function queueAudio(audioBlob: Blob): void {
+export function queueAudio(
+  context: AudioContext | undefined,
+  audioBlob: Blob
+): void {
   // add audio Blob to audioQueue
   audioQueue.push(audioBlob);
   // play the next audio output
-  if (audioQueue.length === 1) setTimeout(playAudio, 500);
+  if (audioQueue.length === 1) setTimeout(() => playAudio(context), 500);
 }
 
 // function for stopping the audio and clearing the queue

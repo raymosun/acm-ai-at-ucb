@@ -6,6 +6,7 @@ import {
 } from "hume";
 
 export type Recorder = {
+  context: AudioContext;
   start: (listener: (data: Blob) => void) => void;
   stop: (prevListener: (data: Blob) => void) => void;
 };
@@ -30,6 +31,7 @@ export async function initializeRecorder(): Promise<Recorder> {
 
   let prevListener: (blob: Blob) => void = () => {};
   return {
+    context: new AudioContext(),
     start: (listener) => {
       prevListener = listener;
       if (recorder.state === "recording") {
