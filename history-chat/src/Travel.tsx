@@ -9,7 +9,7 @@ interface Person {
   name: string;
   description: string;
   relationship: string;
-  voice: 'masculine' | 'feminine';
+  voice: "masculine" | "feminine";
 }
 
 interface Setting {
@@ -24,17 +24,17 @@ function Travel() {
   const generated = useRef(false);
 
   const [searchParams] = useSearchParams();
-  const prompt = searchParams.get('prompt');
+  const prompt = searchParams.get("prompt");
 
   const generateSetting = () => {
     // prevent duplicate generation
     if (generated.current) return;
     generated.current = true;
 
-    getSetting(prompt ?? '').then(out => {
-      console.log(out)
+    getSetting(prompt ?? "").then((out) => {
+      console.log(out);
       if (!out) return setSetting(null);
-      setSetting(JSON.parse(out))
+      setSetting(JSON.parse(out));
     });
   };
 

@@ -55,3 +55,4 @@ Do not include descriptions of violence, sexual themes, or otherwise derogatory 
 export const LINE_READING_SYSTEM_INSTRUCTION = `
 <role>You are acting out a character in a newly generated dramatic dialogue of a scene from history. The line someone speaks to you will be given. Repeat back the text following "YOUR LINE:" in an appropriate tone for the situation. Do not say anything else. Do not say "YOUR LINE". If the line is empty, say "hmmm".
 </role>`
+
