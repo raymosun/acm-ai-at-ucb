@@ -9,7 +9,7 @@ import {
   getBrowserSupportedMimeType,
 } from "hume";
 import { queueAudio, stopAudio } from "./audio";
-import { initializeRecorder } from "./recorder";
+import { Recorder, initializeRecorder } from "./recorder";
 export type UserMessage = {
   role: "user";
   content: string;
@@ -92,7 +92,11 @@ export function useCharacter(
     []
   );
   const [openSocket, setOpenSocket] = useState<StreamSocket | null>(null);
-  const sendAudio = useRef<(blob: Blob) => void>(() => {});
+
+  const recorderRef = useRef<Promise<Recorder>>();
+  useEffect(() => {
+    recorderRef.current = initializeRecorder();
+  }, []);
 
   function handleWebSocketMessageEvent(
     message: Hume.empathicVoice.SubscribeEvent
@@ -126,23 +130,21 @@ export function useCharacter(
       // connect new socket
       const newSocket = await humeClient.empathicVoice.chat.connect({
         configId: voiceConfigIds[voice],
-        onOpen: () => {
+        onOpen: async () => {
           if (cancelledRef.cancelled) {
             newSocket.close();
             return;
           }
           setOpenSocket(newSocket);
-          sendAudio.current = sendAudioCallback;
+          (await recorderRef.current)?.start(sendAudioCallback);
         },
         onMessage: handleWebSocketMessageEvent,
         onError: (error) => {
           console.error(error);
         },
-        onClose: () => {
+        onClose: async () => {
           setOpenSocket((socket) => (socket === newSocket ? null : socket));
-          if (sendAudio.current === sendAudioCallback) {
-            sendAudio.current = () => {};
-          }
+          (await recorderRef.current)?.stop(sendAudioCallback);
         },
       });
 
@@ -172,23 +174,15 @@ export function useCharacter(
 
     return () => {
       bleh.cancelled = true;
-      promise.then(({ newSocket, sendAudioCallback }) => {
+      promise.then(async ({ newSocket, sendAudioCallback }) => {
         if (newSocket.websocket.readyState === WebSocket.OPEN) {
           newSocket.close();
         }
         setOpenSocket((socket) => (socket === newSocket ? null : socket));
-        if (sendAudio.current === sendAudioCallback) {
-          sendAudio.current = () => {};
-        }
+        (await recorderRef.current)?.stop(sendAudioCallback);
       });
     };
   }, [initalizeSocket]);
-
-  useEffect(() => {
-    if (openSocket) {
-      initializeRecorder(sendAudio);
-    }
-  }, [openSocket]);
 
   return {
     messages: simplifyMessages(messages),

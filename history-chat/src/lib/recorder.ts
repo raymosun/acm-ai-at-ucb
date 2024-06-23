@@ -4,11 +4,12 @@ import {
   getAudioStream,
   getBrowserSupportedMimeType,
 } from "hume";
-import { MutableRefObject } from "react";
 
-export async function initializeRecorder(
-  listener: MutableRefObject<(data: Blob) => void>
-) {
+export type Recorder = {
+  start: (listener: (data: Blob) => void) => void;
+  stop: (prevListener: (data: Blob) => void) => void;
+};
+export async function initializeRecorder(): Promise<Recorder> {
   // the recorder responsible for recording the audio stream to be prepared as the audio input
   let recorder: MediaRecorder | null = null;
   // the stream of audio captured from the user's microphone
@@ -26,12 +27,32 @@ export async function initializeRecorder(
   // instantiate the media recorder
   recorder = new MediaRecorder(audioStream, { mimeType });
   // callback for when recorded chunk is available to be processed
-  recorder.ondataavailable = ({ data }) => {
-    // IF size of data is smaller than 1 byte then do nothing
-    if (data.size < 1) return;
-    listener.current(data);
+
+  let prevListener: (blob: Blob) => void = () => {};
+  return {
+    start: (listener) => {
+      prevListener = listener;
+      if (recorder.state === "recording") {
+        recorder.stop();
+      }
+      // capture audio input at a rate of 100ms (recommended)
+      const timeSlice = 100;
+      recorder.start(timeSlice);
+      recorder.ondataavailable = ({ data }) => {
+        // IF size of data is smaller than 1 byte then do nothing
+        if (data.size < 1) return;
+        listener(data);
+      };
+    },
+    stop: (listener) => {
+      if (listener !== prevListener) {
+        return;
+      }
+      if (recorder.state === "recording") {
+        recorder.stop();
+      }
+      recorder.ondataavailable = null;
+      prevListener = () => {};
+    },
   };
-  // capture audio input at a rate of 100ms (recommended)
-  const timeSlice = 100;
-  recorder.start(timeSlice);
 }
