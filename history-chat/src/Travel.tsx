@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { getDialogue, getSetting } from "./lib/gemini";
 import { readScript } from "./lib/readScript";
+import { useCharacter } from "./lib/useCharacter";
 
 interface Person {
   name: string;
@@ -17,6 +18,10 @@ interface Setting {
   personB: Person;
 }
 
+function getCharacterPrompt(setting: string, {name, description, relationship}: Person, dialogue: string[]) {
+  return `The setting is ${setting}. You are ${name}, ${description}. You just had the following conversation with someone where you are related by ${relationship}. ${JSON.stringify(dialogue)}`;
+}
+
 function Travel() {
   const [setting, setSetting] = useState<Setting | null>(null);
   const [dialogue, setDialogue] = useState<string[]>([]);
@@ -24,6 +29,8 @@ function Travel() {
 
   const [searchParams] = useSearchParams();
   const prompt = searchParams.get("prompt");
+
+  const [currentChatter, setCurrentChatter] = useState<'A' | 'B' | null>(null);
 
   const generateSetting = () => {
     // prevent duplicate generation
@@ -56,7 +63,13 @@ function Travel() {
     const voiceA = setting?.personA.voice === 'masculine' ? 'ito' : 'kora';
     const voiceB = setting?.personB.voice === 'masculine' ? 'dacher' : 'kora';
     readScript(dialogue, setting?.setting ?? '', voiceA, voiceB)
-  }, [dialogue])
+  }, [dialogue]);
+
+  const characterPromptA = (setting && dialogue.length) ? getCharacterPrompt(setting.setting, setting.personA, dialogue) : "";
+  const characterPromptB = (setting && dialogue.length) ? getCharacterPrompt(setting.setting, setting.personB, dialogue) : "";
+
+  const { messages: messagesA } = useCharacter(characterPromptA, setting?.personA.voice === 'masculine' ? 'ito' : 'kora', currentChatter === 'A');
+  const { messages: messagesB } = useCharacter(characterPromptB, setting?.personB.voice === 'masculine' ? 'dacher' : 'kora', currentChatter === 'B');
 
   return <>
   <h1>History Chat</h1>
@@ -79,7 +92,53 @@ function Travel() {
       {line}
     </p>)
   )}
+  <div style={{display: 'flex', justifyContent: 'space-between'}}>
+<button onClick={() => { setCurrentChatter('A') }}>
+  Speak with {setting?.personA.name}
+</button>
+<button onClick={() => { setCurrentChatter(null) }}>
+  Mute
+</button>
+<button onClick={() => { setCurrentChatter('B') }}>
+  Speak with {setting?.personB.name}
+</button>
+</div>
+<div style={{display: 'flex'}}>
+  <div>
+    {messagesA?.map((message, index) => (
+      <div key={index}>
+        [{message.role}]{" "}
+        {message.role === "user"
+          ? message.content
+          : message.content.map((line) => <p>{line}</p>)}{" "}
+        {message.role === "assistant" && message.interrupted
+          ? "(interrupted 😡)"
+          : null}{" "}
+        {message.role === "assistant" && message.done ? (
+          <img src={message.content.join(" ")} alt="assistant" />
+        ) : null}
+      </div>
+    ))}
+  </div>
+  <div>
+    {messagesB?.map((message, index) => (
+      <div key={index}>
+        [{message.role}]{" "}
+        {message.role === "user"
+          ? message.content
+          : message.content.map((line) => <p>{line}</p>)}{" "}
+        {message.role === "assistant" && message.interrupted
+          ? "(interrupted 😡)"
+          : null}{" "}
+        {message.role === "assistant" && message.done ? (
+          <img src={message.content.join(" ")} alt="assistant" />
+        ) : null}
+      </div>
+    ))}
+  </div>
+</div>
   </>
+  
 }
 
 export default Travel;
