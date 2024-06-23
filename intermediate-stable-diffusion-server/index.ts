@@ -6,6 +6,7 @@ let nextId = 0
 
 type Unemployed = {
   response: Response
+  aborted: boolean
 }
 type Job = {
   prompt: string
@@ -18,7 +19,7 @@ const understaffed: Job[] = []
 const jobs: Record<number, Job> = []
 
 // Jupyter notebook indicates that it is unemployed and needs a job
-app.post('/next-image-to-generate', (_req, response) => {
+app.post('/next-image-to-generate', (req, response) => {
   const next = understaffed.shift()
   if (next) {
     const id = nextId++
@@ -27,7 +28,11 @@ app.post('/next-image-to-generate', (_req, response) => {
     jobs[id] = next
   } else {
     console.log('[intel] ready, idle')
-    unemployed.push({ response })
+    const worker: Unemployed = { response, aborted: false }
+    unemployed.push(worker)
+    req.on('close', () => {
+      worker.aborted = true
+    })
   }
 })
 
@@ -47,7 +52,10 @@ app.get('/gen-image', (req, res) => {
       return
     }
   }
-  const next = unemployed.shift()
+  let next: Unemployed | undefined
+  do {
+    next = unemployed.shift()
+  } while (next && !next.aborted)
   const job = { prompt, clientResponses: [res] }
   cache[prompt] = job
   if (next) {
