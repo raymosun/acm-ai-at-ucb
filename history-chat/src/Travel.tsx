@@ -65,13 +65,6 @@ function Travel() {
     });
   }, [setting]);
 
-  useEffect(() => {
-    if (dialogue.length === 0) return;
-    const voiceA = setting?.personA.voice === "masculine" ? "ito" : "kora";
-    const voiceB = setting?.personB.voice === "masculine" ? "dacher" : "kora";
-    readScript(dialogue, setting?.setting ?? "", voiceA, voiceB);
-  }, [dialogue]);
-
   const characterPromptA =
     setting && dialogue.length
       ? getCharacterPrompt(setting.setting, setting.personA, dialogue)
@@ -81,7 +74,7 @@ function Travel() {
       ? getCharacterPrompt(setting.setting, setting.personB, dialogue)
       : "";
 
-  const { messages: messagesA } = useCharacter(
+  const { messages: messagesA, context: bruh } = useCharacter(
     characterPromptA,
     setting?.personA.voice === "masculine" ? "ito" : "kora",
     currentChatter === "A"
@@ -91,6 +84,16 @@ function Travel() {
     setting?.personB.voice === "masculine" ? "dacher" : "kora",
     currentChatter === "B"
   );
+
+  useEffect(() => {
+    if (dialogue.length === 0) return;
+    const voiceA = setting?.personA.voice === "masculine" ? "ito" : "kora";
+    const voiceB = setting?.personB.voice === "masculine" ? "dacher" : "kora";
+    console.log("readScript", dialogue, setting?.setting ?? "", voiceA, voiceB);
+    bruh.current?.then((w) =>
+      readScript(w.context, dialogue, setting?.setting ?? "", voiceA, voiceB)
+    );
+  }, [dialogue, bruh]);
 
   return (
     <>

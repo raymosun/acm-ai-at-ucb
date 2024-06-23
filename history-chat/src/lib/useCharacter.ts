@@ -1,6 +1,12 @@
 import { StreamSocket } from "hume/api/resources/empathicVoice";
 import humeClient from "./hume";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  MutableRefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   Hume,
   MimeType,
@@ -88,7 +94,11 @@ export function useCharacter(
   prompt: string,
   voice: keyof typeof voiceConfigIds = "ito",
   active: boolean
-): { messages: Message[]; listening: boolean } {
+): {
+  messages: Message[];
+  listening: boolean;
+  context: MutableRefObject<Promise<Recorder> | undefined>;
+} {
   const [messages, setMessages] = useState<Hume.empathicVoice.SubscribeEvent[]>(
     []
   );
@@ -190,5 +200,6 @@ export function useCharacter(
   return {
     messages: simplifyMessages(messages),
     listening: openSocket !== null,
+    context: recorderRef,
   };
 }
