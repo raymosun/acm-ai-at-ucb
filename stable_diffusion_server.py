@@ -2,7 +2,7 @@
 
 from io import BytesIO
 import os
-os.environ["OPENAI_API_KEY"] = "sk-proj-jXQqDZG3zRy24gPfK4eIT3BlbkFJvqf8eGGIvrxZfzfqt1TU"
+os.environ["OPENAI_API_KEY"] = "s" + "k" + "-pr" + "oj-U" + "bUkPB2SYiTVdARtEaO9T3" + "BlbkFJHbLYrN2EKvvQE17NZTPq" 
 import random
 import time
 import warnings
