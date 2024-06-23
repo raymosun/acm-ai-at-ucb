@@ -10,12 +10,58 @@ import {
   convertBase64ToBlob
 } from 'hume';
 
+export type UserMessage={
+  role: 'user'
+  content: string
+} 
+export type AssistantMessage={
+  role: 'assistant'
+  content: string[]
+  done: boolean
+  interrupted: boolean
+}
+export type Message = UserMessage|AssistantMessage
 
-export function useHume(figure: string) {
-  const [messages, setMessages] = useState<string[]>([]);
+function simplifyMessages (rawMessages: Hume.empathicVoice.SubscribeEvent[]): Message[] {
+  const simplified:Message[]=[]
+  let lastAssistantMessage :AssistantMessage|undefined
+  let userLastSpoke = true
+  for (const message of rawMessages) {
+    switch (message.type) {
+      case 'user_message':
+        simplified.push({role:'user',content:message.message.content??'[no content]',})
+        userLastSpoke = true
+        break
+      case 'assistant_message': 
+        if (lastAssistantMessage && !userLastSpoke) {
+          lastAssistantMessage.content.push(message.message.content??'[no content]')
+        } else {
+          lastAssistantMessage={role:'assistant',content:[message.message.content??'[no content]'],done:false,interrupted:false}
+          simplified.push(lastAssistantMessage)
+          userLastSpoke = false
+        }
+        break
+      case 'assistant_end': 
+        if (lastAssistantMessage) {
+          lastAssistantMessage.done=true
+        }
+        break
+      case 'user_interruption': 
+        if (lastAssistantMessage) {
+          lastAssistantMessage.interrupted=true
+        }
+        break
+    }
+  }
+  return simplified
+}
+
+export function useHume(figure: string): {messages:Message[],listening:boolean} {
+  const [listening, setListening] = useState(false)
+  const [messages, setMessages] = useState<Hume.empathicVoice.SubscribeEvent[]>([]);
   const humeInitialized = useRef<HumeClient|null>(null);
 
-  const appendMessage = (message: string) => {
+  const appendMessage = (message: Hume.empathicVoice.SubscribeEvent) => {
     setMessages((prevMessages) => [...prevMessages, message]);
   };
 
@@ -33,18 +79,19 @@ export function useHume(figure: string) {
   useEffect(() => {
     if (!humeInitialized.current) return
 
-    const socket = initializeClient(humeInitialized.current, appendMessage, figure);
+    const socket = initializeClient(humeInitialized.current, appendMessage, () => setListening(true), figure);
 
     return  () => {
       socket.then(socket=>socket.close())
+      setListening(false)
     }
 
   }, [figure]);
 
-  return messages;
+  return {messages:simplifyMessages(messages),listening};
 }
 
-async function initializeClient(client: HumeClient, appendMessage: (message: string) => void, figure: string){
+async function initializeClient(client: HumeClient, appendMessage: (message: Hume.empathicVoice.SubscribeEvent) => void, onListening: () => void, figure: string){
 
   const number = Date.now()
   console.log('figure', figure)
@@ -111,7 +158,8 @@ async function initializeClient(client: HumeClient, appendMessage: (message: str
     // place logic here which you would like invoked when the socket opens
     console.log('Web socket connection opened')
     await captureAudio()
-    appendMessage('I am listening.\n\n')
+    onListening()
+    // appendMessage('I am listening.\n\n')
   }
 
   // audio playback queue
@@ -165,16 +213,12 @@ async function initializeClient(client: HumeClient, appendMessage: (message: str
       // stop audio playback, clear audio playback queue, and update audio playback state on interrupt
       case 'user_interruption':
         stopAudio()
-        appendMessage(`(interrupted 😡)`)
+        appendMessage(message)
         break
-      case 'user_message':
-        appendMessage(`[you] ${message.message.content}\n\n`)
-        break
-      case 'assistant_message':
-        appendMessage(`[assistant] ${message.message.content}\n`)
-        break
-      case 'assistant_end':
-        appendMessage(`🤖✅\n\n`)
+        case 'user_message':
+          case 'assistant_message':
+            case 'assistant_end':
+        appendMessage(message)
         break
     }
   }

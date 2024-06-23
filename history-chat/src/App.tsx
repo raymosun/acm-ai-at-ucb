@@ -15,7 +15,7 @@ function App() {
     setDisplayText(text);
 
   };
-  const messages = useHume(displayText);
+  const {messages,listening} = useHume(displayText);
 
   return (
     <>
@@ -29,10 +29,11 @@ function App() {
       />
       <button onClick={handleButtonClick}>Submit</button>
       <p>You have selected: {displayText}</p>
+      {listening ? <p>LISTENING</p> : null}
     </div>
       <div>
         {messages.map((message, index) => (
-          <div key={index}>{message}</div>
+          <div key={index}>[{message.role}] {message.role === 'user' ? message.content : message.content.map(line => <p>{line}</p>)} {message.role==='assistant'&&message.interrupted ? '(interrupted 😡)' : null} {message.role==='assistant'&&message.done ? '🤖✅' : null}</div>
         ))}
       </div>
     </>
