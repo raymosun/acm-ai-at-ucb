@@ -325,35 +325,37 @@ for f in os.listdir(output_dir):
         os.remove(os.path.join(output_dir, f))
 
 images = []
-while True:
-    # https://stackoverflow.com/a/69621045
-    response = requests.post(f"{SERVER}/next-image-to-generate", timeout=None)
-    if response.status_code == 524:
-        # means request took too long (from cloudflare)
-        # just means that there's nothing to do for now
-        # just wait a bit
-        import time
+job_id = ""
+try:
+    while True:
+        # https://stackoverflow.com/a/69621045
+        response = requests.post(f"{SERVER}/next-image-to-generate", timeout=None)
+        if response.status_code == 524:
+            # means request took too long (from cloudflare)
+            # just means that there's nothing to do for now
+            # just wait a bit
+            import time
 
-        time.sleep(10)
-        continue
-    # https://stackoverflow.com/a/24531618
-    try:
+            print("sleeping for 5 seconds")
+            time.sleep(5)
+            continue
+        # https://stackoverflow.com/a/24531618
         response.raise_for_status()
-    except requests.exceptions.HTTPError as error:
-        # Release job so it doesn't get lost
+        job_id, prompt = response.text.split("\n", 1)
+        print("generate:", prompt)
+        for image in images:
+            os.remove(image)
+        images = list(prompt_to_image(prompt))
+        print("generated:", images)
         requests.post(
-            f"{SERVER}/release-job",
-            params={"id": job_id},
+            f"{SERVER}/submit-image",
+            params={"id": job_id, "name": images[0]},
+            data=open(images[0], "rb"),
         )
-        raise error
-    job_id, prompt = response.text.split("\n", 1)
-    print("generate:", prompt)
-    for image in images:
-        os.remove(image)
-    images = list(prompt_to_image(prompt))
-    print("generated:", images)
+        job_id = ""
+finally:
+    # Release job so it doesn't get lost
     requests.post(
-        f"{SERVER}/submit-image",
-        params={"id": job_id, "name": images[0]},
-        data=open(images[0], "rb"),
+        f"{SERVER}/release-job",
+        params={"id": job_id},
     )

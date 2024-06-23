@@ -1,7 +1,7 @@
 import "./App.css";
-import { AiImage } from "./components/AiImage";
 import React, { useState } from "react";
 import { useCharacter } from "./lib/useCharacter";
+import { MessageBubble } from "./components/MessageBubble";
 
 function App() {
   const [text, setText] = useState<string>("");
@@ -31,20 +31,9 @@ function App() {
         <p>You have selected: {displayText}</p>
         {listening ? <p>LISTENING</p> : null}
       </div>
-      <div>
+      <div className="messages">
         {messages.map((message, index) => (
-          <div key={index}>
-            [{message.role}]{" "}
-            {message.role === "user"
-              ? message.content
-              : message.content.map((line) => <p>{line}</p>)}{" "}
-            {message.role === "assistant" && message.interrupted
-              ? "(interrupted 😡)"
-              : null}{" "}
-            {message.role === "assistant" && message.done ? (
-              <AiImage prompt={message.content.join(" ")} />
-            ) : null}
-          </div>
+          <MessageBubble key={index} message={message} />
         ))}
       </div>
     </>
