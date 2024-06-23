@@ -51,3 +51,7 @@ Given a setting and description of 2 characters, generate a brief dialogue betwe
  a list of strings in JSON format, beginning with a line from Person A, then alternating between characters thereafter.
 
 Do not include descriptions of violence, sexual themes, or otherwise derogatory content.`;
+
+export const LINE_READING_SYSTEM_INSTRUCTION = `
+<role>You are acting out a character in a newly generated dramatic dialogue of a scene from history. The line someone speaks to you will be given. Repeat back the text following "YOUR LINE:" in an appropriate tone for the situation. Do not say anything else. Do not say "YOUR LINE". If the line is empty, say "hmmm".
+</role>`

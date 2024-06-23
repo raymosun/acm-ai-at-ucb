@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 
 import { useSearchParams } from "react-router-dom";
 import { getDialogue, getSetting } from "./lib/gemini";
+import { getScriptReader } from "./lib/getScriptReader";
+import { readScript } from "./lib/readScript";
 
 interface Person {
   name: string;
@@ -24,7 +26,7 @@ function Travel() {
   const [searchParams] = useSearchParams();
   const prompt = searchParams.get('prompt');
 
-  useEffect(() => {
+  const generateSetting = () => {
     // prevent duplicate generation
     if (generated.current) return;
     generated.current = true;
@@ -34,18 +36,35 @@ function Travel() {
       if (!out) return setSetting(null);
       setSetting(JSON.parse(out))
     });
-  }, []);
+  };
 
   useEffect(() => {
+    if (dialogue.length > 0 || !setting) return;
     getDialogue(JSON.stringify(setting)).then(out => {
+      console.log('dialog output', out)
       if (out) {
-        setDialogue(JSON.parse(out));
+        const parsedDialog = JSON.parse(out);
+        setDialogue(old => {
+          if (old.length > 0) return old;
+          return parsedDialog;
+        });
       }
     });
-  }, [setting])
+  }, [setting]);
+
+  useEffect(() => {
+    if (dialogue.length === 0) return;
+    const voiceA = setting?.personA.voice === 'masculine' ? 'ito' : 'kora';
+    const voiceB = setting?.personB.voice === 'masculine' ? 'dacher' : 'kora';
+    readScript(dialogue, setting?.setting ?? '', voiceA, voiceB)
+    // readScript(dialogue, setting?.setting ?? '', setting?.personA.voice ?? 'ito', setting?.personB.voice ?? 'ito')
+  }, [dialogue])
 
   return <>
   <h1>History Chat</h1>
+  <button onClick={async () => {
+    generateSetting();
+  }}>Time Travel!</button>
   <h4>{prompt}</h4>
   <h4>{setting?.setting}</h4>
   <div style={{display: 'flex'}}>

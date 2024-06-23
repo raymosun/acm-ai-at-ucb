@@ -33,7 +33,7 @@ export function queueAudio(audioBlob: Blob): void {
   // add audio Blob to audioQueue
   audioQueue.push(audioBlob);
   // play the next audio output
-  if (audioQueue.length === 1) playAudio();
+  if (audioQueue.length === 1) setTimeout(playAudio, 500);
 }
 
 // function for stopping the audio and clearing the queue
