@@ -1,4 +1,5 @@
 import './App.css'
+import { AiImage } from './components/AiImage';
 import { useHume } from './lib/useHume';
 import React, { useState } from 'react';
 
@@ -33,7 +34,7 @@ function App() {
     </div>
       <div>
         {messages.map((message, index) => (
-          <div key={index}>[{message.role}] {message.role === 'user' ? message.content : message.content.map(line => <p>{line}</p>)} {message.role==='assistant'&&message.interrupted ? '(interrupted 😡)' : null} {message.role==='assistant'&&message.done ? '🤖✅' : null}</div>
+          <div key={index}>[{message.role}] {message.role === 'user' ? message.content : message.content.map(line => <p>{line}</p>)} {message.role==='assistant'&&message.interrupted ? '(interrupted 😡)' : null} {message.role==='assistant'&&message.done ? <AiImage prompt={message.content.join(' ')} /> : null}</div>
         ))}
       </div>
     </>
