@@ -87,7 +87,7 @@ function App() {
               value={text}
               onChange={handleInputChange}
               placeholder="Input the name of a climate change researcher."
-              style={{ width: "20rem" }}
+              style={{ width: "22rem" }}
             />
           </label>
           <button type="submit">Submit</button>

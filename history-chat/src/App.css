@@ -10,6 +10,8 @@ body {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  display: flex;
+  flex-direction: column;
 }
 
 .logo {
@@ -79,14 +81,29 @@ body {
   grid-template-areas:
     "label button"
     "p p";
+  text-align: left;
+  align-self: center;
+  gap: 10px;
+  align-items: end;
 }
 .form label {
   grid-area: label;
   display: flex;
   flex-direction: column;
+  gap: 5px;
+}
+.form input {
+  border: 0;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 5px;
+  font: inherit;
 }
 .form button {
   grid-area: button;
+  height: 40px;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 .selection {
   grid-area: p;
