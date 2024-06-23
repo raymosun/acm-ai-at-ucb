@@ -27,7 +27,6 @@ type BetterNameLater = {
   sendAudioCallback: (blob: Blob) => void;
 };
 
-let id = 1000;
 function simplifyMessages(
   rawMessages: Hume.empathicVoice.SubscribeEvent[]
 ): Message[] {
@@ -93,7 +92,7 @@ export function useCharacter(
     []
   );
   const [openSocket, setOpenSocket] = useState<StreamSocket | null>(null);
-  const sendAudio = useRef<((blob: Blob) => void) | null>(null);
+  const sendAudio = useRef<(blob: Blob) => void>(() => {});
 
   function handleWebSocketMessageEvent(
     message: Hume.empathicVoice.SubscribeEvent
@@ -123,32 +122,26 @@ export function useCharacter(
   }
 
   const initalizeSocket = useCallback(
-    async (cancelledRef: {
-      w: number;
-      cancelled: boolean;
-    }): Promise<BetterNameLater> => {
+    async (cancelledRef: { cancelled: boolean }): Promise<BetterNameLater> => {
       // connect new socket
       const newSocket = await humeClient.empathicVoice.chat.connect({
         configId: voiceConfigIds[voice],
         onOpen: () => {
           if (cancelledRef.cancelled) {
-            console.log("forgoing because it closed", cancelledRef.w);
             newSocket.close();
             return;
           }
           setOpenSocket(newSocket);
           sendAudio.current = sendAudioCallback;
-          console.log("open", cancelledRef.w);
         },
         onMessage: handleWebSocketMessageEvent,
         onError: (error) => {
           console.error(error);
         },
         onClose: () => {
-          console.log("WebSocket connection closed", cancelledRef.w);
           setOpenSocket((socket) => (socket === newSocket ? null : socket));
           if (sendAudio.current === sendAudioCallback) {
-            sendAudio.current = null;
+            sendAudio.current = () => {};
           }
         },
       });
@@ -158,7 +151,6 @@ export function useCharacter(
         const audioInput: Omit<Hume.empathicVoice.AudioInput, "type"> = {
           data: encodedAudioData,
         };
-        console.log("giving audio to", cancelledRef.w);
         newSocket.sendAudioInput(audioInput);
       };
 
@@ -175,48 +167,28 @@ export function useCharacter(
   );
 
   useEffect(() => {
-    const w = id++;
-    console.log("useEffect", w);
-    const bleh = { w, cancelled: false };
+    const bleh = { cancelled: false };
     const promise = initalizeSocket(bleh);
-    let obj: BetterNameLater | undefined;
-    promise.then((wh) => {
-      console.log("readyy", w);
-      obj = wh;
-    });
 
     return () => {
-      console.log("cleanup", w);
       bleh.cancelled = true;
-      if (obj) {
-        const { newSocket, sendAudioCallback } = obj;
-        console.log(w, "cleaning up", w);
-        if (newSocket.websocket.readyState === WebSocket.OPEN)
+      promise.then(({ newSocket, sendAudioCallback }) => {
+        if (newSocket.websocket.readyState === WebSocket.OPEN) {
           newSocket.close();
+        }
         setOpenSocket((socket) => (socket === newSocket ? null : socket));
         if (sendAudio.current === sendAudioCallback) {
-          sendAudio.current = null;
+          sendAudio.current = () => {};
         }
-      } else {
-        console.log(w, "cleaning up (in promise...)", w);
-        promise.then(({ newSocket, sendAudioCallback }) => {
-          console.log(w, "cleaning up (in promise)", w);
-          if (newSocket.websocket.readyState === WebSocket.OPEN)
-            newSocket.close();
-          setOpenSocket((socket) => (socket === newSocket ? null : socket));
-          if (sendAudio.current === sendAudioCallback) {
-            sendAudio.current = null;
-          }
-        });
-      }
+      });
     };
   }, [initalizeSocket]);
 
   useEffect(() => {
-    initializeRecorder(sendAudio);
-  }, []);
-
-  console.log("render", openSocket);
+    if (openSocket) {
+      initializeRecorder(sendAudio);
+    }
+  }, [openSocket]);
 
   return {
     messages: simplifyMessages(messages),
