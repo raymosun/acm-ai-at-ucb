@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 
 import { useSearchParams } from "react-router-dom";
 import { getDialogue, getSetting } from "./lib/gemini";
-import { getScriptReader } from "./lib/getScriptReader";
 import { readScript } from "./lib/readScript";
 
 interface Person {
@@ -57,7 +56,6 @@ function Travel() {
     const voiceA = setting?.personA.voice === 'masculine' ? 'ito' : 'kora';
     const voiceB = setting?.personB.voice === 'masculine' ? 'dacher' : 'kora';
     readScript(dialogue, setting?.setting ?? '', voiceA, voiceB)
-    // readScript(dialogue, setting?.setting ?? '', setting?.personA.voice ?? 'ito', setting?.personB.voice ?? 'ito')
   }, [dialogue])
 
   return <>
