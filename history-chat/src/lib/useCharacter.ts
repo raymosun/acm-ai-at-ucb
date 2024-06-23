@@ -23,7 +23,7 @@ export function useCharacter(
   voice: keyof typeof voiceConfigIds = 'ito'
 ) {
   const [socket, setSocket] = useState<StreamSocket | null>(null);
-  const initialized = useRef(false);
+  const initializedCharacter = useRef('');
 
   function handleWebSocketMessageEvent(
     message: Hume.empathicVoice.SubscribeEvent
@@ -81,10 +81,14 @@ export function useCharacter(
 
   useEffect(() => {
     // prevent duplicate socket connections
-    if (initialized.current) return;
-    initialized.current = true;
+    if (initializedCharacter.current === description) return;
+    initializedCharacter.current = description;
+
+    // close old socket when changing characters
+    if (socket) socket.close();
+
     initalizeSocket();
-  }, []);
+  }, [description]);
 
   useEffect(() => {
     async function sendAudio(audio: Blob) {
