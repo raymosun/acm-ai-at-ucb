@@ -1,9 +1,21 @@
 import {  useState } from 'react';
 import './App.css'
-import { useCharacter } from './lib/useCharacter';
+import { useHume } from './lib/useHume';
 
 function App() {
-  // const messages = useHume();
+  
+  const [text, setText] = useState<string>('');
+  const [displayText, setDisplayText] = useState<string>('');
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setText(event.target.value);
+  };
+
+  const handleButtonClick = () => {
+    setDisplayText(text);
+
+  };
+  // const messages = useHume(text);
   const [messages, setMessages] = useState<string[]>([])
 
   function appendMessage(message: string) {
@@ -17,6 +29,16 @@ function App() {
   return (
     <>
       <h1>History Chat</h1>
+      <div>
+      <input 
+        type="text" 
+        value={text} 
+        onChange={handleInputChange} 
+        placeholder="Input a historical figure here" 
+      />
+      <button onClick={handleButtonClick}>Submit</button>
+      <p>You have selected: {displayText}</p>
+    </div>
       <div>
         {messages.map((message, index) => (
           <div key={index}>{message}</div>
