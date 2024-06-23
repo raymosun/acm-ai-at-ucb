@@ -1,3 +1,5 @@
+import React from "react";
+
 import { Message } from "../lib/useCharacter";
 import { AiImage } from "./AiImage";
 import styles from "./MessageBubble.module.css";
