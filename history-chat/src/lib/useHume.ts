@@ -9,6 +9,7 @@ import {
   getBrowserSupportedMimeType,
   convertBase64ToBlob
 } from 'hume';
+import { queueAudio, stopAudio } from './audio';
 
 export function useHume() {
   const [messages, setMessages] = useState<string[]>([]);
@@ -94,36 +95,7 @@ async function initializeClient(client: HumeClient, appendMessage: (message: str
     appendMessage('I am listening.\n\n')
   }
 
-  // audio playback queue
-  const audioQueue: Blob[] = []
-  // flag which denotes whether audio is currently playing or not
-  let isPlaying = false
-  // the current audio element to be played
-  let currentAudio: HTMLAudioElement | null = null
-
-  // play the audio within the playback queue, converting each Blob into playable HTMLAudioElements
-  function playAudio(): void {
-    // IF there is nothing in the audioQueue OR audio is currently playing then do nothing
-    if (!audioQueue.length || isPlaying) return
-    // update isPlaying state
-    isPlaying = true
-    // pull next audio output from the queue
-    const audioBlob = audioQueue.shift()
-    // IF audioBlob is unexpectedly undefined then do nothing
-    if (!audioBlob) return
-    // converts Blob to AudioElement for playback
-    const audioUrl = URL.createObjectURL(audioBlob)
-    currentAudio = new Audio(audioUrl)
-    // play audio
-    currentAudio.play()
-    // callback for when audio finishes playing
-    currentAudio.onended = () => {
-      // update isPlaying state
-      isPlaying = false
-      // attempt to pull next audio output from queue
-      if (audioQueue.length) playAudio()
-    }
-  }
+  
 
   // define a WebSocket message event handler to play audio output
   function handleWebSocketMessageEvent(
@@ -138,9 +110,7 @@ async function initializeClient(client: HumeClient, appendMessage: (message: str
         const audioOutput = message.data
         const blob = convertBase64ToBlob(audioOutput, mimeType)
         // add audio Blob to audioQueue
-        audioQueue.push(blob)
-        // play the next audio output
-        if (audioQueue.length === 1) playAudio()
+        queueAudio(blob);
         break
       // stop audio playback, clear audio playback queue, and update audio playback state on interrupt
       case 'user_interruption':
@@ -157,16 +127,5 @@ async function initializeClient(client: HumeClient, appendMessage: (message: str
         appendMessage(`🤖✅\n\n`)
         break
     }
-  }
-
-  // function for stopping the audio and clearing the queue
-  function stopAudio(): void {
-    // stop the audio playback
-    currentAudio?.pause()
-    currentAudio = null
-    // update audio playback state
-    isPlaying = false
-    // clear the audioQueue
-    audioQueue.length = 0
   }
 }

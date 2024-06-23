@@ -1,8 +1,18 @@
+import {  useState } from 'react';
 import './App.css'
-import { useHume } from './lib/useHume';
+import { useCharacter } from './lib/useCharacter';
 
 function App() {
-  const messages = useHume();
+  // const messages = useHume();
+  const [messages, setMessages] = useState<string[]>([])
+
+  function appendMessage(message: string) {
+    setMessages((prevMessages) => [...prevMessages, message])
+  }
+
+  const description = 'John, who just escaped the 1906 san francisco earthquake';
+
+  useCharacter(description, () => appendMessage('connected!'), appendMessage, 'ito');
 
   return (
     <>
