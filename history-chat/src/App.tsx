@@ -23,12 +23,12 @@ function App() {
 
   const { messages, listening } = useCharacter(
     mode === "history"
-      ? `Answer questions as ${displayText}, and do not in any circumstances deviate from the character that they have chosen. Be accurate in terms of what the character might possibly know about, and when something does not make sense, say that you are confused. Sprinkle historical facts whenever you have the opportunity to.`
+      ? `You are roleplaying a historical figure. Answer questions in character, and do not in any circumstances deviate from the character that they have chosen. Be accurate in terms of what the character might possibly know about, and when something does not make sense, say that you are confused. Sprinkle historical facts whenever you have the opportunity to.`
       : `Answer questions as the climate change researcher ${
           displayText || "(choose one)"
         }, and do not in any circumstances deviate from the character that they have chosen. Be accurate in terms of what the character might possibly know about, and when something does not make sense, say that you are confused. When possible, mention facts about the character and climate change, and discuss the work and impact they have done.`,
     "ito",
-    true,
+    true
   );
 
   useEffect(() => {

@@ -1,11 +1,18 @@
-import React from "react";
-
 import { Message } from "../lib/useCharacter";
 import { AiImage } from "./AiImage";
 import styles from "./MessageBubble.module.css";
 
+export type ExtendedMessage =
+  | Message
+  | {
+      role: "travel";
+      side: "left" | "right";
+      name: string;
+      content: string;
+    };
+
 export type MessageBubbleProps = {
-  message: Message;
+  message: ExtendedMessage;
 };
 export function MessageBubble({ message }: MessageBubbleProps) {
   if (message.role === "user") {
@@ -14,6 +21,18 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         <div className={styles.blob}></div>
         <div className={styles.bubble}>
           <span className={styles.part}>{message.content}</span>
+        </div>
+      </div>
+    );
+  } else if (message.role === "travel") {
+    return (
+      <div
+        className={`${styles.message} ${styles.travel} ${styles[message.side]}`}
+      >
+        <div className={styles.blob}></div>
+        <div className={styles.bubble}>
+          <span className={styles.name}>{message.name}</span>
+          {message.content}
         </div>
       </div>
     );

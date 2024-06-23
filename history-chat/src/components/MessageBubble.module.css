@@ -1,16 +1,19 @@
 .message {
   position: relative;
+  z-index: 0;
   display: flex;
   flex-direction: column;
   max-width: 90%;
   backdrop-filter: blur(20px);
   animation: appear 0.5s;
 }
-.user {
+.user,
+.left {
   text-align: left;
   margin-right: auto;
 }
-.assistant {
+.assistant,
+.right {
   text-align: right;
   margin-left: auto;
 }
@@ -29,15 +32,24 @@
 }
 
 .bubble {
+  padding: 20px;
+}
+.bubble::before {
+  content: "";
+  display: block;
+  position: absolute;
+  inset: 0;
   border: 1px solid rgba(255, 255, 255, 0.3);
   background-color: rgba(255, 255, 255, 0.1);
-  padding: 20px;
   border-radius: 15px;
+  z-index: -1;
 }
-.user .bubble {
+.user .bubble::before,
+.left .bubble::before {
   border-top-left-radius: 0;
 }
-.assistant .bubble {
+.assistant .bubble::before,
+.right .bubble::before {
   border-top-right-radius: 0;
 }
 
@@ -59,6 +71,22 @@
   background-color: #ec4899;
   transform: rotate(-1deg);
 }
+.left .blob {
+  left: 0;
+  background-color: #eab308;
+  transform: rotate(1deg);
+  top: 0;
+  bottom: 0;
+  width: 20%;
+}
+.right .blob {
+  right: 0;
+  background-color: #22c55e;
+  transform: rotate(-1deg);
+  top: 0;
+  bottom: 0;
+  width: 20%;
+}
 
 .part {
   animation: pop-in 1.5s forwards;
@@ -72,6 +100,33 @@
     color: rgba(255, 255, 255, 0.8);
     text-shadow: 0 0 0 white;
   }
+}
+
+.name {
+  display: flex;
+  height: 30px;
+  align-items: center;
+  position: absolute;
+  top: -15px;
+  padding: 0 15px;
+  z-index: 0;
+}
+.name::before {
+  content: "";
+  display: block;
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  border-radius: 100px;
+}
+.left .name {
+  left: 20px;
+}
+.right .name {
+  right: 20px;
 }
 
 @keyframes appear {

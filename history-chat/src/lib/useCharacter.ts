@@ -85,9 +85,9 @@ const voiceConfigIds = {
 };
 
 export function useCharacter(
-  description: string,
+  prompt: string,
   voice: keyof typeof voiceConfigIds = "ito",
-  active: boolean,
+  active: boolean
 ): { messages: Message[]; listening: boolean } {
   const [messages, setMessages] = useState<Hume.empathicVoice.SubscribeEvent[]>(
     []
@@ -136,7 +136,7 @@ export function useCharacter(
             newSocket.close();
             return;
           }
-          setMessages([]);
+          // setMessages([]);
           setOpenSocket(newSocket);
           (await recorderRef.current)?.start(sendAudioCallback);
         },
@@ -162,13 +162,13 @@ export function useCharacter(
       if (!cancelledRef.cancelled) {
         // set up system prompt
         await newSocket.sendSessionSettings({
-          systemPrompt: `You are roleplaying a historical figure. Answer questions in character, and do not in any circumstances deviate from the character that they have chosen. Be accurate in terms of what the character might possibly know about, and when something does not make sense, say that you are confused. Sprinkle historical facts whenever you have the opportunity to.\n\n ${description}`,
+          systemPrompt: prompt,
         });
       }
 
       return { newSocket, sendAudioCallback };
     },
-    [description, voice, active]
+    [prompt, voice, active]
   );
 
   useEffect(() => {
